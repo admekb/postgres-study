@@ -1,34 +1,44 @@
 
-# Подготовка и установка mesos на хосты с deploy приложений
+# Работа с уровнями изоляции транзакции в PostgreSQL
 
-## Генерируем приватный ключ на хосте с ansible
-
-```bash
-ssh-keygen
-```
-> Пользователь тот, под которым будем работать с ansible. Нажимаем enter несколько раз для генерации
-
-## Копируем наш приватный ключ себе
+## сделать в первой сессии новую таблицу и наполнить ее данными
 
 ```bash
-cat /ct_admin/.ssh/id_rsa.pub
-```
-> далее руками будем его по всем хостам разносить
-
-## На каждом хосте включая и сам хост ansible вставляем ранее сохраненный приватный ключ
-
-```bash
-sudo -i
-echo "ранее_созданный_приватный_ключ" >> /root/.ssh/authorized_keys
+iso=# create table persons(id serial, first_name text, second_name text);
+CREATE TABLE
+iso=*# insert into persons(first_name, second_name) values('ivan', 'ivanov');
+INSERT 0 1
+iso=*# insert into persons(first_name, second_name) values('petr', 'petrov');
+INSERT 0 1
+iso=*# commit;
 ```
 
-## Устанавливаем ansible
+## посмотреть текущий уровень изоляции
 
 ```bash
-sudo yum update -y
-sudo yum install -y python3-pip
-sudo pip3 install --upgrade pip
-pip3 install "ansible==2.7.0"
+iso=# show transaction isolation level;
+ transaction_isolation
+-----------------------
+ read committed
+(1 row)
+```
+
+## в первой сессии добавить новую запись
+
+```bash
+iso=*# insert into persons(first_name, second_name) values('sergey', 'sergeev');
+INSERT 0 1
+```
+
+## сделать select * from persons во второй сессии
+
+```bash
+iso=# select * from persons;
+ id | first_name | second_name
+----+------------+-------------
+  1 | ivan       | ivanov
+  2 | petr       | petrov
+(2 rows)
 ```
 ## Клонируем наш репозиторий с git
 - на хосте с ansible соответственно
@@ -42,3 +52,4 @@ git clone git@github.com:crowdtesting-ru/ufrpayroll-devops.git
 - создаем файл службы /etc/systemd/system/jenkins.service с следующим содержимым
 
 ```
+> далее руками будем его по всем хостам разносить
