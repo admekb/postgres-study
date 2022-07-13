@@ -136,36 +136,102 @@ postgres=#
 ## подключится из контейнера с клиентом к контейнеру с сервером и сделать таблицу с парой строк
 
 ```bash
-iso=*# commit;
-COMMIT
+postgres=# CREATE DATABASE study;
+CREATE DATABASE
+postgres=# \c study
+You are now connected to database "study" as user "postgres".
+study=# CREATE TABLE test (i serial, amount int);
+INSERT INTO test(amount) VALUES (100);
+INSERT INTO test(amount) VALUES (500);
+SELECT * FROM test;
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+ i | amount
+---+--------
+ 1 |    100
+ 2 |    500
+(2 rows)
 ```
 
 ## подключится к контейнеру с сервером с ноутбука/компьютера извне инстансов GCP/места установки докера
 
 ```bash
+(base) admekb@MacBook-Air-Aleksandr ~ % sudo docker run -it --rm --name pg-client postgres:14 psql -h 192.168.1.20 -U postgres
+Password:
+Unable to find image 'postgres:14' locally
+14: Pulling from library/postgres
+60197a4c18d4: Pull complete
+e2fad7962cc3: Pull complete
+ac096a3cfeb6: Pull complete
+6505ea08ff74: Pull complete
+273081b4002f: Pull complete
+7e1b3627e162: Pull complete
+f56b0e9d7500: Pull complete
+6db829696ec4: Pull complete
+ea61b4d4558b: Pull complete
+682e50b7dd31: Pull complete
+07d44ce41d1a: Pull complete
+908fe291a87e: Pull complete
+62c216491082: Pull complete
+Digest: sha256:3e2eba0a6efbeb396e086c332c5a85be06997d2cf573d34794764625f405df4e
+Status: Downloaded newer image for postgres:14
+Password for user postgres:
+psql (14.4 (Debian 14.4-1.pgdg110+1))
+Type "help" for help.
 
+postgres=# \l
+                                 List of databases
+   Name    |  Owner   | Encoding |  Collate   |   Ctype    |   Access privileges
+-----------+----------+----------+------------+------------+-----------------------
+ postgres  | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+ study     | postgres | UTF8     | en_US.utf8 | en_US.utf8 |
+ template0 | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+           |          |          |            |            | postgres=CTc/postgres
+ template1 | postgres | UTF8     | en_US.utf8 | en_US.utf8 | =c/postgres          +
+           |          |          |            |            | postgres=CTc/postgres
+(4 rows)
+
+postgres=#
 ```
 
 ## удалить контейнер с сервером
 
 ```bash
-
+admekb@postgres:~$ sudo docker rm -f pg-docker
+[sudo] password for admekb:
+pg-docker
 ```
 
 ## создать его заново
 
 ```bash
-
+admekb@postgres:~$ sudo docker run --name pg-docker --network pg-net -e POSTGRES_PASSWORD=postgres -d -p 5432:5432 -v /var/lib/postgres:/var/lib/postgresql/data postgres:14
+30718515fc8b0de0d021ba7d8b1555c1f0c83f647bd51405867d867aabf3386d
 ```
 
 ## подключится снова из контейнера с клиентом к контейнеру с сервером
 
 ```bash
+admekb@postgres:~$ sudo docker run -it --rm --network pg-net --name pg-client postgres:14 psql -h pg-docker -U postgres
+Password for user postgres:
+psql (14.4 (Debian 14.4-1.pgdg110+1))
+Type "help" for help.
 
+postgres=#
 ```
 
 ## проверить, что данные остались на месте
 
 ```bash
+postgres=# \c study
+You are now connected to database "study" as user "postgres".
+study=# select * from test;
+ i | amount
+---+--------
+ 1 |    100
+ 2 |    500
+(2 rows)
 
+study=#
 ```
