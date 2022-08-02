@@ -145,70 +145,81 @@ postgres-# FROM pg_settings WHERE name like 'autovacuum%';
 
 ```
 
-## создайте новую таблицу t1 с одной колонкой c1 типа integer
+## так чтобы получить максимально ровное значение tps на горизонте часа
 
 ```bash
-testdb=# CREATE TABLE t1(c1 integer);
-CREATE TABLE
+postgres@postgres:~$ pgbench -c8 -P 60 -T 3600 -U postgres postgres
+starting vacuum...end.
+progress: 60.0 s, 297.5 tps, lat 26.859 ms stddev 16.477
+progress: 120.0 s, 287.0 tps, lat 27.855 ms stddev 18.235
+progress: 180.0 s, 306.2 tps, lat 26.110 ms stddev 15.925
+progress: 240.0 s, 307.9 tps, lat 25.963 ms stddev 15.773
+progress: 300.0 s, 308.1 tps, lat 25.945 ms stddev 16.003
+progress: 360.0 s, 297.9 tps, lat 26.839 ms stddev 16.453
+progress: 420.0 s, 307.6 tps, lat 25.991 ms stddev 15.980
+progress: 480.0 s, 306.2 tps, lat 26.105 ms stddev 15.716
+progress: 540.0 s, 307.8 tps, lat 25.972 ms stddev 15.748
+progress: 600.0 s, 307.7 tps, lat 25.973 ms stddev 15.440
+progress: 660.0 s, 297.4 tps, lat 26.887 ms stddev 16.722
+progress: 720.0 s, 307.5 tps, lat 25.995 ms stddev 16.195
+progress: 780.0 s, 306.9 tps, lat 26.050 ms stddev 15.611
+progress: 840.0 s, 307.9 tps, lat 25.963 ms stddev 15.885
+progress: 900.0 s, 307.4 tps, lat 26.005 ms stddev 15.907
+progress: 960.0 s, 297.2 tps, lat 26.906 ms stddev 16.728
+progress: 1020.0 s, 307.4 tps, lat 26.006 ms stddev 16.244
+progress: 1080.0 s, 306.6 tps, lat 26.070 ms stddev 16.012
+progress: 1140.0 s, 308.0 tps, lat 25.958 ms stddev 15.674
+progress: 1200.0 s, 307.9 tps, lat 25.957 ms stddev 15.982
+progress: 1260.0 s, 297.3 tps, lat 26.893 ms stddev 16.702
+progress: 1320.0 s, 308.3 tps, lat 25.935 ms stddev 15.956
+progress: 1380.0 s, 307.2 tps, lat 26.018 ms stddev 15.724
+progress: 1440.0 s, 307.9 tps, lat 25.959 ms stddev 16.071
+progress: 1500.0 s, 307.6 tps, lat 25.987 ms stddev 15.726
+progress: 1560.0 s, 297.7 tps, lat 26.855 ms stddev 16.814
+progress: 1620.0 s, 307.8 tps, lat 25.968 ms stddev 15.960
+progress: 1680.0 s, 306.1 tps, lat 26.118 ms stddev 15.902
+progress: 1740.0 s, 307.8 tps, lat 25.975 ms stddev 15.937
+progress: 1800.0 s, 308.0 tps, lat 25.955 ms stddev 15.712
+progress: 1860.0 s, 298.0 tps, lat 26.824 ms stddev 16.657
+progress: 1920.0 s, 308.7 tps, lat 25.902 ms stddev 15.693
+progress: 1980.0 s, 306.1 tps, lat 26.118 ms stddev 16.024
+progress: 2040.0 s, 308.4 tps, lat 25.917 ms stddev 15.743
+progress: 2100.0 s, 307.6 tps, lat 25.985 ms stddev 15.855
+progress: 2160.0 s, 298.0 tps, lat 26.821 ms stddev 16.481
+progress: 2220.0 s, 308.7 tps, lat 25.906 ms stddev 15.818
+progress: 2280.0 s, 306.5 tps, lat 26.083 ms stddev 16.066
+progress: 2340.0 s, 308.0 tps, lat 25.956 ms stddev 15.531
+progress: 2400.0 s, 307.8 tps, lat 25.971 ms stddev 15.936
+progress: 2460.0 s, 298.0 tps, lat 26.826 ms stddev 16.791
+progress: 2520.0 s, 307.7 tps, lat 25.980 ms stddev 15.490
+progress: 2580.0 s, 306.9 tps, lat 26.043 ms stddev 15.953
+progress: 2640.0 s, 307.9 tps, lat 25.974 ms stddev 15.617
+progress: 2700.0 s, 308.2 tps, lat 25.937 ms stddev 16.018
+progress: 2760.0 s, 297.1 tps, lat 26.907 ms stddev 16.528
+progress: 2820.0 s, 307.7 tps, lat 25.984 ms stddev 15.642
+progress: 2880.0 s, 307.8 tps, lat 25.973 ms stddev 15.912
+progress: 2940.0 s, 307.5 tps, lat 25.994 ms stddev 15.930
+progress: 3000.0 s, 308.1 tps, lat 25.941 ms stddev 16.053
+progress: 3060.0 s, 298.3 tps, lat 26.809 ms stddev 16.517
+progress: 3120.0 s, 308.7 tps, lat 25.897 ms stddev 15.747
+progress: 3180.0 s, 306.9 tps, lat 26.043 ms stddev 15.708
+progress: 3240.0 s, 308.0 tps, lat 25.955 ms stddev 15.968
+progress: 3300.0 s, 308.4 tps, lat 25.919 ms stddev 15.927
+progress: 3360.0 s, 297.3 tps, lat 26.888 ms stddev 16.764
+progress: 3420.0 s, 309.4 tps, lat 25.828 ms stddev 16.103
+progress: 3480.0 s, 306.9 tps, lat 26.056 ms stddev 15.769
+progress: 3540.0 s, 308.0 tps, lat 25.949 ms stddev 15.964
+progress: 3600.0 s, 308.2 tps, lat 25.940 ms stddev 16.008
+transaction type: <builtin: TPC-B (sort of)>
+scaling factor: 1
+query mode: simple
+number of clients: 8
+number of threads: 1
+duration: 3600 s
+number of transactions actually processed: 1099116
+latency average = 26.184 ms
+latency stddev = 16.062 ms
+tps = 305.306974 (including connections establishing)
+tps = 305.307162 (excluding connections establishing)
 ```
-
-## вставьте строку со значением c1=1
-
-```bash
-testdb=# INSERT INTO t1 values(1);
-INSERT 0 1
-```
-
-## создайте новую роль readonly
-
-```bash
-testdb=# CREATE ROLE readonly;
-CREATE ROLE
-```
-## дайте новой роли право на подключение к базе данных testdb
-
-```bash
-testdb=# grant connect on database testdb to readonly;
-GRANT
-```
-
-## дайте новой роли право на использование схемы testnm
-
-```bash
-testdb=# grant usage on schema testnm to readonly;
-GRANT
-```
-
-## дайте новой роли право на select для всех таблиц схемы testnm
-
-```bash
-testdb=# grant select on all tables in schema testnm to readonly;
-GRANT
-```
-
-## создайте пользователя testread с паролем test123
-
-```bash
-testdb=# create user testread with password 'test123';
-CREATE ROLE
-```
-## дайте роль readonly пользователю testread
-
-```bash
-testdb=# grant readonly TO testread;
-GRANT ROLE
-```
-## зайдите под пользователем testread в базу данных testdb
-
-```bash
-postgres=# \c testdb testread
-Password for user testread:
-psql (14.4 (Ubuntu 14.4-1.pgdg20.04+1), server 13.7 (Ubuntu 13.7-1.pgdg20.04+1))
-You are now connected to database "testdb" as user "testread".
-testdb=>
-```
-## сделайте select * from t1;
-
-```bash
-testdb=# grant readonly TO testread;
-GRANT ROL
+> как мы видим производительность даже после изменения настроек остается максимально эффективной и ровной. Я считаю что это связано с очень высокой производительностью жесткого диска для данного вида тестирования(одна бд с небольшим количеством данных)
