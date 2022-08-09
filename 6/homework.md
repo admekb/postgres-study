@@ -1,1 +1,98 @@
+# Механизм блокировок
 
+## Настройте сервер так, чтобы в журнал сообщений сбрасывалась информация о блокировках, удерживаемых более 200 миллисекунд. Воспроизведите ситуацию, при которой в журнале появятся такие сообщения.
+
+```bash
+postgres=# ALTER SYSTEM SET log_lock_waits = on;
+ALTER SYSTEM
+postgres=# ALTER SYSTEM SET deadlock_timeout = 200;
+ALTER SYSTEM
+postgres=# SELECT pg_reload_conf();
+ pg_reload_conf
+----------------
+ t
+(1 row)
+```
+
+## Смоделируйте ситуацию обновления одной и той же строки тремя командами UPDATE в разных сеансах. Изучите возникшие блокировки в представлении pg_locks и убедитесь, что все они понятны. Пришлите список блокировок и объясните, что значит каждая.
+
+```bash
+postgres=# CREATE TABLE accounts(
+postgres(#   acc_no integer PRIMARY KEY,
+postgres(#   amount numeric
+postgres(# );
+CREATE TABLE
+postgres=# INSERT INTO accounts
+postgres-#   VALUES (1,1000.00), (2,2000.00), (3,3000.00);
+INSERT 0 3
+postgres=# select * from accounts;
+ acc_no | amount
+--------+---------
+      1 | 1000.00
+      2 | 2000.00
+      3 | 3000.00
+(3 rows)
+
+postgres=# BEGIN;
+BEGIN
+postgres=*# UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 1;
+UPDATE 1
+postgres=*# SELECT locktype, mode, granted, pid, pg_blocking_pids(pid) AS wait_for
+postgres-*# FROM pg_locks WHERE relation = 'accounts'::regclass;
+ locktype |       mode       | granted |   pid   | wait_for
+----------+------------------+---------+---------+-----------
+ relation | RowExclusiveLock | t       | 3379184 | {}
+ relation | RowExclusiveLock | t       | 3390345 | {3390060}
+ relation | RowExclusiveLock | t       | 3390060 | {3379184}
+ tuple    | ExclusiveLock    | t       | 3390060 | {3379184}
+ tuple    | ExclusiveLock    | f       | 3390345 | {3390060}
+(5 rows)
+
+postgres=*# COMMIT;
+COMMIT
+postgres=# SELECT locktype, mode, granted, pid, pg_blocking_pids(pid) AS wait_for
+FROM pg_locks WHERE relation = 'accounts'::regclass;
+ locktype |       mode       | granted |   pid   | wait_for
+----------+------------------+---------+---------+-----------
+ relation | RowExclusiveLock | t       | 3390345 | {3390060}
+ relation | RowExclusiveLock | t       | 3390060 | {}
+(2 rows)
+
+postgres=# SELECT locktype, mode, granted, pid, pg_blocking_pids(pid) AS wait_for
+FROM pg_locks WHERE relation = 'accounts'::regclass;
+ locktype |       mode       | granted |   pid   | wait_for
+----------+------------------+---------+---------+----------
+ relation | RowExclusiveLock | t       | 3390345 | {}
+(1 row)
+
+postgres=# SELECT locktype, mode, granted, pid, pg_blocking_pids(pid) AS wait_for
+FROM pg_locks WHERE relation = 'accounts'::regclass;
+ locktype | mode | granted | pid | wait_for
+----------+------+---------+-----+----------
+(0 rows)
+
+```
+>Еще в двух окнах был запущен UPDATE и постепенно выполнялся COMMIT.
+>Здесь мы видимо экслюзивную блокировку строки первой транзакции 3379184.
+>Транзакцию 3390060 эксклюзивной блокировки стройки ожидающую завершение транзакции 3379184.
+>Экслюзивную блокировку самой транзакции 3390060.
+>Транзакцию 3390345 эксклюзивной блокировки стройки ожидающую завершение транзакции 3390060 без доступа, потому есть вторая транзакция которая ожидает UPDATE.
+>Экслюзивную блокировку самой транзакции 3390345.
+
+## выполнить pgbench -i postgres
+
+```bash
+2022-08-09 13:04:27.193 UTC [3390060] postgres@postgres LOG:  process 3390060 acquired ShareLock on transaction 2426128 after 2959399.613 ms
+2022-08-09 13:04:27.193 UTC [3390060] postgres@postgres CONTEXT:  while updating tuple (0,6) in relation "accounts"
+2022-08-09 13:04:27.193 UTC [3390060] postgres@postgres STATEMENT:  UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 1;
+2022-08-09 13:04:27.193 UTC [3390345] postgres@postgres LOG:  process 3390345 acquired ExclusiveLock on tuple (0,6) of relation 17311 of database 13414 after 2892719.279 ms
+2022-08-09 13:04:27.193 UTC [3390345] postgres@postgres STATEMENT:  UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 1;
+2022-08-09 13:04:27.393 UTC [3390345] postgres@postgres LOG:  process 3390345 still waiting for ShareLock on transaction 2426129 after 200.231 ms
+2022-08-09 13:04:27.393 UTC [3390345] postgres@postgres DETAIL:  Process holding the lock: 3390060. Wait queue: 3390345.
+2022-08-09 13:04:27.393 UTC [3390345] postgres@postgres CONTEXT:  while rechecking updated tuple (0,7) in relation "accounts"
+2022-08-09 13:04:27.393 UTC [3390345] postgres@postgres STATEMENT:  UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 1;
+2022-08-09 13:04:35.003 UTC [3390345] postgres@postgres LOG:  process 3390345 acquired ShareLock on transaction 2426129 after 7809.647 ms
+2022-08-09 13:04:35.003 UTC [3390345] postgres@postgres CONTEXT:  while rechecking updated tuple (0,7) in relation "accounts"
+2022-08-09 13:04:35.003 UTC [3390345] postgres@postgres STATEMENT:  UPDATE accounts SET amount = amount - 100.00 WHERE acc_no = 1;
+```
+>Изучая журнал четко видно что были блокировки с ожиданием больше 200mc и видно содержимое самих запросов, три запроса UPDATE c номерами транзакций и какая транзация какую ожидала.
