@@ -3,15 +3,30 @@
 ## Настройте выполнение контрольной точки раз в 30 секунд.
 
 ```bash
-postgres=# ALTER SYSTEM SET log_lock_waits = on;
+postgres=# ALTER SYSTEM SET checkpoint_timeout = 30;
 ALTER SYSTEM
-postgres=# ALTER SYSTEM SET deadlock_timeout = 200;
-ALTER SYSTEM
-postgres=# SELECT pg_reload_conf();
- pg_reload_conf
-----------------
- t
+postgres=# show checkpoint_timeout;
+ checkpoint_timeout
+--------------------
+ 5min
 (1 row)
+
+postgres=# \q
+admekb@postgres:~$ sudo -u postgres pg_ctlcluster 14 main stop
+admekb@postgres:~$ sudo -u postgres pg_ctlcluster 14 main start
+Warning: the cluster will not be running as a systemd service. Consider using systemctl:
+  sudo systemctl start postgresql@14-main
+admekb@postgres:~$ sudo -u postgres psql
+psql (14.5 (Ubuntu 14.5-1.pgdg20.04+1))
+Type "help" for help.
+
+postgres=# show checkpoint_timeout;
+ checkpoint_timeout
+--------------------
+ 30s
+(1 row)
+
+postgres=#
 ```
 
 ## Смоделируйте ситуацию обновления одной и той же строки тремя командами UPDATE в разных сеансах. Изучите возникшие блокировки в представлении pg_locks и убедитесь, что все они понятны. Пришлите список блокировок и объясните, что значит каждая.
