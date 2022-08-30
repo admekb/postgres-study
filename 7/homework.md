@@ -207,7 +207,20 @@ postgres=# SELECT pg_relation_filepath('test');
 ----------------------
  base/14487/16384
 (1 row)
-
 postgres=# \q
+[root@localhost ~]# systemctl stop postgresql-14
 [root@localhost ~]# echo "test" >> /var/lib/pgsql/14/data/base/14487/16384
+[root@localhost ~]# systemctl start postgresql-14
+postgres=# select * from test;
+ c1
+----
+ 1
+ 2
+(2 строки)
+postgres=# SHOW data_checksums;
+ data_checksums
+----------------
+ on
+(1 строка)
 ```
+>не хочет у меня ломаться
