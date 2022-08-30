@@ -168,3 +168,46 @@ initial connection time = 69.863 ms
 tps = 2165.864982 (without initial connection time)
 ```
 >Запись идет через wal_writer_delay, с уменьшенным временем отлика, производительность выше в несколько раз
+
+## Создайте новый кластер с включенной контрольной суммой страниц. Создайте таблицу. Вставьте несколько значений. Выключите кластер. Измените пару байт в таблице. Включите кластер и сделайте выборку из таблицы. Что и почему произошло? как проигнорировать ошибку и продолжить работу?
+
+```bash
+[root@localhost ~]# su - postgres -c '/usr/pgsql-14/bin/pg_checksums --enable -D "/var/lib/pgsql/14/data/"'
+Checksum operation completed
+Files scanned:  931
+Blocks scanned: 3297
+pg_checksums: syncing data directory
+pg_checksums: updating control file
+Checksums enabled in cluster
+[root@localhost ~]# systemctl start postgresql-14
+[root@localhost ~]# su - postgres -c 'psql -c "SHOW data_checksums;"'
+ data_checksums
+----------------
+ on
+(1 row)
+
+[root@localhost ~]# sudo -u postgres psql
+psql (14.5)
+Type "help" for help.
+
+postgres=# create table test(c1 text);
+CREATE TABLE
+postgres=# insert into test values('1');
+INSERT 0 1
+postgres=# insert into test values('2');
+INSERT 0 1
+postgres=# select * from test;
+ c1
+----
+ 1
+ 2
+(2 rows)
+postgres=# SELECT pg_relation_filepath('test');
+ pg_relation_filepath
+----------------------
+ base/14487/16384
+(1 row)
+
+postgres=# \q
+[root@localhost ~]# echo "test" >> /var/lib/pgsql/14/data/base/14487/16384
+```
