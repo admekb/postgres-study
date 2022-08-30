@@ -254,3 +254,151 @@ Data page checksum version:           1
 ```
 >повторил и ничего не ломается, а видимо должно.
 >ну и на вопрос как избежать включить параметр ignore_checksum_failure = on
+
+## Ну давайте попробуем на ubuntu
+
+```bash
+root@ubuntu:~# pg_createcluster --datadir=/var/lib/postgresql/14/main 14 main -- --data-checksums
+Creating new PostgreSQL cluster 14/main ...
+/usr/lib/postgresql/14/bin/initdb -D /var/lib/postgresql/14/main --auth-local peer --auth-host scram-sha-256 --no-instructions --data-checksums
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are enabled.
+
+fixing permissions on existing directory /var/lib/postgresql/14/main ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... Etc/UTC
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+Ver Cluster Port Status Owner    Data directory              Log file
+14  main    5432 down   postgres /var/lib/postgresql/14/main /var/log/postgresql/postgresql-14-main.log
+root@ubuntu:~# pg_ctlcluster 14 main start
+root@ubuntu:~# sudo -u postgres psql
+psql (14.5 (Ubuntu 14.5-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# show data_checksums;
+ data_checksums
+----------------
+ on
+(1 row)
+
+postgres=# exit
+root@ubuntu:~# sudo -u postgres psql postgres
+psql (14.5 (Ubuntu 14.5-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# show wal_log_hints;
+ wal_log_hints
+---------------
+ off
+(1 row)
+
+postgres=# create table test(c1 text);
+CREATE TABLE
+postgres=# insert into test values('1');
+INSERT 0 1
+postgres=# insert into test values('2');
+INSERT 0 1
+postgres=# select * from test;
+ c1
+----
+ 1
+ 2
+(2 rows)
+
+postgres=# \q
+root@ubuntu:~# sudo -u postgres psql postgres
+psql (14.5 (Ubuntu 14.5-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# SELECT pg_relation_filepath('test');
+ pg_relation_filepath
+----------------------
+ base/13761/16384
+(1 row)
+
+root@ubuntu:~# pg_ctlcluster 14 main stop
+root@ubuntu:~# echo "1" >> /var/lib/postgresql/14/main/base/13761/16384
+root@ubuntu:~# pg_ctlcluster 14 main start
+root@ubuntu:~# sudo -u postgres psql postgres
+psql (14.5 (Ubuntu 14.5-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# select * from test;
+ c1
+----
+ 1
+ 2
+(2 rows)
+
+postgres=# SELECT datname, checksum_failures, checksum_last_failure FROM pg_stat_database WHERE datname IS NOT NULL;
+  datname  | checksum_failures | checksum_last_failure
+-----------+-------------------+-----------------------
+ postgres  |                 0 |
+ template1 |                 0 |
+ template0 |                 0 |
+(3 rows)
+
+postgres=# ALTER SYSTEM SET wal_log_hints = on;
+ALTER SYSTEM
+postgres=# \q
+root@ubuntu:~# pg_ctlcluster 14 main stop
+root@ubuntu:~# pg_ctlcluster 14 main start
+root@ubuntu:~# sudo -u postgres psql postgres
+psql (14.5 (Ubuntu 14.5-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# show wal_log_hints;
+ wal_log_hints
+---------------
+ on
+(1 row)
+
+postgres=# create table test2(c1 text);
+CREATE TABLE
+postgres=# insert into test2 values('2');
+INSERT 0 1
+postgres=# SELECT pg_relation_filepath('test2');
+ pg_relation_filepath
+----------------------
+ base/13761/16389
+(1 row)
+
+postgres=# \q
+root@ubuntu:~# pg_ctlcluster 14 main stop
+root@ubuntu:~# echo "1" >> /var/lib/postgresql/14/main/base/13761/16389
+root@ubuntu:~# pg_ctlcluster 14 main start
+root@ubuntu:~# sudo -u postgres psql postgres
+psql (14.5 (Ubuntu 14.5-1.pgdg22.04+1))
+Type "help" for help.
+
+postgres=# select * from test2;
+ c1
+----
+ 2
+(1 row)
+
+postgres=# SELECT datname, checksum_failures, checksum_last_failure FROM pg_stat_database WHERE datname IS NOT NULL;
+  datname  | checksum_failures | checksum_last_failure
+-----------+-------------------+-----------------------
+ postgres  |                 0 |
+ template1 |                 0 |
+ template0 |                 0 |
+(3 rows)
+
+postgres=# \q
+root@ubuntu:~# su - postgres -c '/usr/lib/postgresql/14/bin/pg_controldata -D "/var/lib/postgresql/14/main/" | grep checksum'
+Data page checksum version:           1
+```
+>не ломается, вообще
