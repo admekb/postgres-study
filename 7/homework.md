@@ -222,5 +222,26 @@ postgres=# SHOW data_checksums;
 ----------------
  on
 (1 строка)
+[root@localhost 14487]# md5sum 16394
+cb452077643c4fb666f81645943c894b  16394
+[root@localhost 14487]# echo "test" >> /var/lib/pgsql/14/data/base/14487/16394
+[root@localhost 14487]# md5sum 16394
+456390bcea26e8a586227cd8adf6c99a  16394
+[root@localhost 14487]# sudo -u postgres psql postgres
+psql (14.5)
+Введите "help", чтобы получить справку.
+
+postgres=# SELECT datname, checksum_failures, checksum_last_failure FROM pg_stat_database WHERE datname IS NOT NULL;
+  datname  | checksum_failures | checksum_last_failure
+-----------+-------------------+-----------------------
+ postgres  |                 0 |
+ template1 |                 0 |
+ template0 |                 0 |
+(3 строки)
+
+postgres=# \q
+[root@localhost 14487]# systemctl stop postgresql-14
+[root@localhost 14487]# su - postgres -c '/usr/pgsql-14/bin/pg_controldata -D "/var/lib/pgsql/14/data/" | grep checksum'
+Data page checksum version:           1
 ```
->не хочет у меня ломаться
+>не хочет у меня ломаться, не там правлю?
