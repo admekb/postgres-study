@@ -245,3 +245,12 @@ postgres=# \q
 Data page checksum version:           1
 ```
 >не хочет у меня ломаться, не там правлю?
+>включил postgres=# show wal_log_hints;
+```bash
+ wal_log_hints
+---------------
+ on
+(1 строка)
+```
+>повторил и ничего не ломается, а видимо должно.
+>ну и на вопрос как избежать включить параметр ignore_checksum_failure = on
