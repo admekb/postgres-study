@@ -32,7 +32,7 @@ update tickets set passenger_name_lexeme = to_tsvector(passenger_name);
 ```sql
 CREATE INDEX search_index_passenger_name ON tickets USING GIN (passenger_name_lexeme);
 ``` 
-* пробуем найти всех пассажиров с именем
+* пробуем найти всех пассажиров с именем ELENA
 ```sql
 explain
 select * from tickets where passenger_name_lexeme @@ to_tsquery('ELENA');
