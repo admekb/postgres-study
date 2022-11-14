@@ -35,37 +35,11 @@ $t_sales$ LANGUAGE plpgsql;
 * создадим триггер
 
 ```sql
-create table bookings_2017_08 partition of bookings_part for values from (date'2017-08-01') to (date'2017-09-01');
-insert into bookings_2017_08 select * from bookings where book_date between date'2017-08-01' and date'2017-09-01' -1;
-
-create table bookings_2017_07 partition of bookings_part for values from (date'2017-07-01') to (date'2017-08-01');
-insert into bookings_2017_07 select * from bookings where book_date between date'2017-07-01' and date'2017-08-01' -1;
-
-create table bookings_2017_06 partition of bookings_part for values from (date'2017-06-01') to (date'2017-07-01');
-insert into bookings_2017_06 select * from bookings where book_date between date'2017-06-01' and date'2017-07-01' -1;
-
-create table bookings_2017_05 partition of bookings_part for values from (date'2017-05-01') to (date'2017-06-01');
-insert into bookings_2017_05 select * from bookings where book_date between date'2017-05-01' and date'2017-06-01' -1;
-
-create table bookings_2017_04 partition of bookings_part for values from (date'2017-04-01') to (date'2017-05-01');
-insert into bookings_2017_04 select * from bookings where book_date between date'2017-04-01' and date'2017-05-01' -1;
-
-create table bookings_2017_03 partition of bookings_part for values from (date'2017-03-01') to (date'2017-04-01');
-insert into bookings_2017_03 select * from bookings where book_date between date'2017-03-01' and date'2017-04-01' -1;
-
-create table bookings_2017_02 partition of bookings_part for values from (date'2017-02-01') to (date'2017-03-01');
-insert into bookings_2017_02 select * from bookings where book_date between date'2017-02-01' and date'2017-03-01' -1;
-
-create table bookings_2017_01 partition of bookings_part for values from ('2017-01-01') to (date'2017-02-01');
-insert into bookings_2017_01 select * from bookings where book_date between date'2017-01-01' and date'2017-02-01' -1;
-```
-* не забываем создать дефолтную партицию, чтобы не потерять данные
-
-```sql
 CREATE TRIGGER t_sales
 AFTER INSERT OR UPDATE OR DELETE ON sales FOR EACH ROW EXECUTE FUNCTION insert_sum();
 ```
 * делаем запрос в таблицу
+
 ```sql
 select * from pract_functions.good_sum_mart;
 ```
@@ -74,6 +48,7 @@ select * from pract_functions.good_sum_mart;
 Автомобиль Ferrari FXX K	925000000.05
 ```
 * делаем вставку
+
 ```sql
 INSERT INTO sales (good_id, sales_qty) VALUES (1, 10), (2, 1);
 ```
