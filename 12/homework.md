@@ -52,6 +52,11 @@ select * from pract_functions.good_sum_mart;
 ```sql
 INSERT INTO sales (good_id, sales_qty) VALUES (1, 10), (2, 1);
 ```
+* проверяем
+
+```sql
+select * from pract_functions.good_sum_mart;
+```
 ```console
 Спички хозайственные	151.00
 Автомобиль Ferrari FXX K	1110000000.06
