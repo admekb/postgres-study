@@ -38,7 +38,7 @@ $t_sales$ LANGUAGE plpgsql;
 CREATE TRIGGER t_sales
 AFTER INSERT OR UPDATE OR DELETE ON sales FOR EACH ROW EXECUTE FUNCTION insert_sum();
 ```
-* делаем запрос в таблицу
+* делаем вставку
 
 ```sql
 select * from pract_functions.good_sum_mart;
@@ -47,8 +47,6 @@ select * from pract_functions.good_sum_mart;
 Спички хозайственные	86.00
 Автомобиль Ferrari FXX K	1110000000.06
 ```
-* делаем вставку
-
 ```sql
 INSERT INTO sales (good_id, sales_qty) VALUES (1, 10), (2, 1);
 ```
@@ -72,6 +70,9 @@ select * from pract_functions.good_sum_mart;
 DELETE from sales where sales_id = 3;
 ```
 ```sql
+select * from pract_functions.good_sum_mart;
+```
+```sql
 Спички хозайственные	86.00
 Автомобиль Ferrari FXX K	1110000000.06
 ```
@@ -86,6 +87,9 @@ select * from pract_functions.good_sum_mart;
 ```
 ```sql
 UPDATE sales SET sales_qty = 900 where sales_id = 2;
+```
+```sql
+select * from pract_functions.good_sum_mart;
 ```
 ```sql
 Спички хозайственные	540.50
